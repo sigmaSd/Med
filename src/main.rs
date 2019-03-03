@@ -193,10 +193,10 @@ impl Med {
                 .insert(patient_name.clone(), p_dir.clone());
         }
 
-        // if no data is present add patient name as data
-        // if Self::read_patient_data(&p_dir).0.is_none() {
-        //     Self::sig_save_patient_data(&p_dir, patient_name.clone(), "".to_string());
-        // }
+        //if no data is present add patient name as data
+        if Self::read_patient_data(&p_dir).0.is_none() {
+            Self::sig_save_patient_data(&p_dir, patient_name.clone(), "".to_string());
+        }
 
         let hbox = Self::create_patient_row(patient_name, p_dir);
 
@@ -286,7 +286,6 @@ impl Med {
 
     // gui pieces
     fn _create_title_bar() -> Box {
-
         let hbox = Box::new(Orientation::Horizontal, 10);
         for i in 0..5 {
             match i {
@@ -294,29 +293,27 @@ impl Med {
                     let label = Label::new("Name");
 
                     hbox.pack_start(&label, false, true, 10);
-                },
+                }
                 1 => {
                     let label = Label::new("Diag");
                     hbox.pack_start(&label, false, true, 10);
-                },
+                }
                 2 => {
                     let label = Label::new("DE");
                     hbox.pack_start(&label, false, true, 10);
-                },
+                }
                 3 => {
                     let label = Label::new("DS");
                     hbox.pack_start(&label, false, true, 10);
-                },
+                }
                 4 => {
                     let label = Label::new("ND");
                     hbox.pack_start(&label, false, true, 10);
-                },
+                }
                 _ => unreachable!(),
             }
-
         }
         hbox
-
     }
 
     fn create_patient_row(patient_name: String, p_dir: PathBuf) -> Box {
