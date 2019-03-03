@@ -42,9 +42,11 @@ impl Default for Med {
 
 impl Med {
     fn build_gui(&mut self) {
+        // fixed elements
         let add_btn = Button::new_with_label("Add");
         let rm_btn = Button::new_with_label("Rm");
         let search_bar = Entry::new();
+        //let title_bar = Self::create_title_bar();
 
         let hbox = Box::new(Orientation::Horizontal, 10);
         hbox.add(&add_btn);
@@ -53,6 +55,8 @@ impl Med {
         let vbox = Box::new(Orientation::Vertical, 10);
         vbox.add(&hbox);
         vbox.add(&search_bar);
+        //vbox.add(&title_bar);
+
         for name in self.database.borrow().keys() {
             Self::sig_patient_add(&self.patients_rows, name.to_string(), &vbox, None, None)
         }
@@ -61,6 +65,7 @@ impl Med {
         win.set_title("Med");
         win.add(&vbox);
         win.show_all();
+        win.maximize();
         win.connect_delete_event(|_, _| {
             gtk::main_quit();
             Inhibit(false)
@@ -111,7 +116,7 @@ impl Med {
             let mut visible = vec![];
             let p_b = p_b.borrow();
             p_b.keys().for_each(|p_name| {
-                if p_name.contains(&search) {
+                if p_name.to_lowercase().contains(&search) {
                     let p_btn = &p_b[p_name];
                     visible.push(p_btn);
                 }
@@ -280,6 +285,40 @@ impl Med {
     }
 
     // gui pieces
+    fn _create_title_bar() -> Box {
+
+        let hbox = Box::new(Orientation::Horizontal, 10);
+        for i in 0..5 {
+            match i {
+                0 => {
+                    let label = Label::new("Name");
+
+                    hbox.pack_start(&label, false, true, 10);
+                },
+                1 => {
+                    let label = Label::new("Diag");
+                    hbox.pack_start(&label, false, true, 10);
+                },
+                2 => {
+                    let label = Label::new("DE");
+                    hbox.pack_start(&label, false, true, 10);
+                },
+                3 => {
+                    let label = Label::new("DS");
+                    hbox.pack_start(&label, false, true, 10);
+                },
+                4 => {
+                    let label = Label::new("ND");
+                    hbox.pack_start(&label, false, true, 10);
+                },
+                _ => unreachable!(),
+            }
+
+        }
+        hbox
+
+    }
+
     fn create_patient_row(patient_name: String, p_dir: PathBuf) -> Box {
         let hbox = Box::new(Orientation::Horizontal, 10);
         // name diag de ds nd
@@ -295,10 +334,10 @@ impl Med {
 
         // the rest
 
-        hbox.add(&btn);
+        hbox.pack_start(&btn, false, true, 10);
         for col in [diag, de, ds, nd].iter() {
             let label = Label::new(col.as_str());
-            hbox.add(&label);
+            hbox.pack_start(&label, false, true, 10);
         }
 
         hbox
@@ -392,6 +431,7 @@ impl Med {
             ew.destroy();
         });
 
+        entry_win.maximize();
         entry_win.show_all();
     }
 
