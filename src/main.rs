@@ -61,6 +61,10 @@ impl Med {
         win.set_title("Med");
         win.add(&vbox);
         win.show_all();
+        win.connect_delete_event(|_, _| {
+            gtk::main_quit();
+            Inhibit(false)
+        });
 
         self.btns.insert("add".to_string(), add_btn);
         self.btns.insert("rm".to_string(), rm_btn);
@@ -260,20 +264,37 @@ impl Med {
             });
         });
     }
+
+    // update gui
+
+    fn update_patient_row(p_row: &Box, entrys: &[Entry]) {
+        p_row
+            .get_children()
+            .iter()
+            .skip(1)
+            .enumerate()
+            .for_each(|(i, c)| {
+                let c = c.clone().downcast::<Label>().unwrap();
+                c.set_text(&entrys[i].get_text().unwrap());
+            });
+    }
+
     // gui pieces
     fn create_patient_row(patient_name: String, p_dir: PathBuf) -> Box {
+        let hbox = Box::new(Orientation::Horizontal, 10);
         // name diag de ds nd
         let (diag, de, ds, nd) = Self::read_patient_header(&p_dir);
 
         // name button
         let btn = Button::new_with_label(&patient_name);
 
+        let p_row = hbox.clone();
         btn.connect_clicked(move |_btn| {
-            Self::create_patient_win(&patient_name, &p_dir);
+            Self::create_patient_win(&patient_name, &p_dir, &p_row);
         });
 
         // the rest
-        let hbox = Box::new(Orientation::Horizontal, 10);
+
         hbox.add(&btn);
         for col in [diag, de, ds, nd].iter() {
             let label = Label::new(col.as_str());
@@ -283,8 +304,7 @@ impl Med {
         hbox
     }
 
-    fn create_patient_win(patient_name: &String, p_dir: &PathBuf) {
-
+    fn create_patient_win(patient_name: &str, p_dir: &PathBuf, p_row: &Box) {
         let save_btn = Button::new_with_label("Save");
 
         let header_box = Box::new(Orientation::Vertical, 10);
@@ -295,55 +315,54 @@ impl Med {
         hbox.pack_start(&header_box, false, false, 10);
 
         let (diag, de, ds, nd) = Self::read_patient_header(&p_dir);
+        let entrys = [Entry::new(), Entry::new(), Entry::new(), Entry::new()];
         for (idx, header) in [diag, de, ds, nd].iter().enumerate() {
             match idx {
                 0 => {
                     let label = Label::new("Diag: ");
-                    let entry = Entry::new();
-                    entry.set_text(&header);
+                    entrys[0].set_text(&header);
 
                     let hbox = Box::new(Orientation::Horizontal, 5);
                     hbox.add(&label);
-                    hbox.add(&entry);
+                    hbox.add(&entrys[0]);
 
                     header_box.add(&hbox);
-                },
+                }
                 1 => {
-                    let label = Label::new("DE:  ");
-                    let entry = Entry::new();
-                    entry.set_text(&header);
+                    let label = Label::new("DE:   ");
+                    entrys[1].set_input_purpose(InputPurpose::Digits);
+                    entrys[1].set_text(&header);
 
                     let hbox = Box::new(Orientation::Horizontal, 5);
                     hbox.add(&label);
-                    hbox.add(&entry);
+                    hbox.add(&entrys[1]);
 
                     header_box.add(&hbox);
-                },
+                }
                 2 => {
-                    let label = Label::new("DS:  ");
-                    let entry = Entry::new();
-                    entry.set_text(&header);
+                    let label = Label::new("DS:   ");
+                    entrys[2].set_input_purpose(InputPurpose::Digits);
+                    entrys[2].set_text(&header);
 
                     let hbox = Box::new(Orientation::Horizontal, 5);
                     hbox.add(&label);
-                    hbox.add(&entry);
+                    hbox.add(&entrys[2]);
 
                     header_box.add(&hbox);
-                },
+                }
                 3 => {
-                    let label = Label::new("ND:  ");
-                    let entry = Entry::new();
-                    entry.set_text(&header);
+                    let label = Label::new("ND:   ");
+                    entrys[3].set_input_purpose(InputPurpose::Number);
+                    entrys[3].set_text(&header);
 
                     let hbox = Box::new(Orientation::Horizontal, 5);
                     hbox.add(&label);
-                    hbox.add(&entry);
+                    hbox.add(&entrys[3]);
 
                     header_box.add(&hbox);
-                },
-                _ => panic!("??")
+                }
+                _ => panic!("??"),
             }
-
         }
 
         let vbox = Box::new(Orientation::Vertical, 10);
@@ -357,9 +376,10 @@ impl Med {
         entry_text.set_text(&Self::read_patient_data(&p_dir).1);
 
         // clone ref
-        let patient_name = RefCell::new(patient_name.clone());
+        let patient_name = RefCell::new(patient_name.to_string());
         let ew = entry_win.clone();
         let et = entry_text.clone();
+        let p_row = p_row.clone();
 
         let p_dir = p_dir.clone();
 
@@ -367,6 +387,8 @@ impl Med {
             let p_name = patient_name.borrow().to_string();
             let p_data = et.get_text().unwrap().to_string();
             Self::sig_save_patient_data(&p_dir, p_name, p_data);
+            Self::sig_save_patient_header(&p_dir, &entrys);
+            Self::update_patient_row(&p_row, &entrys);
             ew.destroy();
         });
 
@@ -374,6 +396,7 @@ impl Med {
     }
 
     // manipulate patient data
+
     fn read_patient_data(p_dir: &PathBuf) -> (Option<String>, String) {
         let data_file = {
             let mut data = p_dir.clone();
@@ -395,6 +418,27 @@ impl Med {
         let patient_name = data[0].clone();
         let patient_data: String = data.into_iter().skip(1).collect();
         (Some(patient_name), patient_data)
+    }
+
+    fn sig_save_patient_header(p_dir: &PathBuf, entrys: &[Entry]) {
+        let header_file = {
+            let mut d = p_dir.clone();
+            d.push("header");
+            d
+        };
+
+        let header_file = fs::File::create(&header_file).unwrap();
+
+        for (idx, entry) in entrys.iter().enumerate() {
+            let entry = entry.get_text().unwrap();
+            match idx {
+                0 => writeln!(&header_file, "Diag: {}", entry).unwrap(),
+                1 => writeln!(&header_file, "DE: {}", entry).unwrap(),
+                2 => writeln!(&header_file, "DS: {}", entry).unwrap(),
+                3 => writeln!(&header_file, "ND: {}", entry).unwrap(),
+                _ => panic!("???"),
+            }
+        }
     }
 
     fn read_patient_header(p_dir: &PathBuf) -> (String, String, String, String) {
