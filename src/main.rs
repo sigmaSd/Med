@@ -329,7 +329,7 @@ impl Med {
                     header_box.add(&hbox);
                 }
                 1 => {
-                    let label = Label::new("DE:   ");
+                    let label = Label::new("DE:     ");
                     entrys[1].set_input_purpose(InputPurpose::Digits);
                     entrys[1].set_text(&header);
 
@@ -340,7 +340,7 @@ impl Med {
                     header_box.add(&hbox);
                 }
                 2 => {
-                    let label = Label::new("DS:   ");
+                    let label = Label::new("DS:     ");
                     entrys[2].set_input_purpose(InputPurpose::Digits);
                     entrys[2].set_text(&header);
 
@@ -351,7 +351,7 @@ impl Med {
                     header_box.add(&hbox);
                 }
                 3 => {
-                    let label = Label::new("ND:   ");
+                    let label = Label::new("ND:    ");
                     entrys[3].set_input_purpose(InputPurpose::Number);
                     entrys[3].set_text(&header);
 
@@ -361,7 +361,7 @@ impl Med {
 
                     header_box.add(&hbox);
                 }
-                _ => panic!("??"),
+                _ => unreachable!(),
             }
         }
 
@@ -436,7 +436,7 @@ impl Med {
                 1 => writeln!(&header_file, "DE: {}", entry).unwrap(),
                 2 => writeln!(&header_file, "DS: {}", entry).unwrap(),
                 3 => writeln!(&header_file, "ND: {}", entry).unwrap(),
-                _ => panic!("???"),
+                _ => unreachable!(),
             }
         }
     }
